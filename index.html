@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LuminaRead - PDF Reader & Typography Enhancer</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Nunito:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Local PDF.js (Reliable, fast, offline capable) -->
+  <script src="pdf.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="theme-paper">
+  <div class="app-layout">
+    <!-- Backdrop for mobile drawer/sidebar -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <div class="drawer-backdrop" id="drawerBackdrop"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              <line x1="9" y1="7" x2="15" y2="7"></line>
+              <line x1="9" y1="11" x2="15" y2="11"></line>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <span class="app-name">LuminaRead</span>
+            <span class="app-tag">Smart PDF Reader</span>
+          </div>
+        </div>
+        <button id="closeSidebarBtn" class="icon-btn mobile-only" title="Tutup Menu" aria-label="Tutup Menu">✕</button>
+      </div>
+
+      <!-- Upload Zone -->
+      <div class="upload-section">
+        <label for="pdfFileInput" class="upload-dropzone" id="dropZone">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <span class="upload-title">Buka / Unggah PDF</span>
+          <span class="upload-subtitle">Klik atau tarik file PDF ke sini</span>
+          <input type="file" id="pdfFileInput" accept="application/pdf" />
+        </label>
+      </div>
+
+      <!-- Book List / Library -->
+      <div class="library-section">
+        <div class="library-header">
+          <h3>Perpustakaan Saya</h3>
+          <span id="bookCountBadge" class="count-badge">0 buku</span>
+        </div>
+        <div class="book-list" id="bookListContainer">
+          <div class="empty-library">
+            <p>Belum ada buku yang tersimpan.</p>
+            <small>PDF yang dibuka akan otomatis tersimpan posisi bacanya.</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reading Stats Footer -->
+      <div class="sidebar-footer">
+        <div class="save-status" id="saveIndicator">
+          <span class="status-dot"></span>
+          <span id="saveStatusText">Siap membaca</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Navigation Toolbar -->
+      <header class="top-toolbar">
+        <div class="toolbar-left">
+          <button id="toggleSidebarBtn" class="toolbar-btn icon-btn" title="Toggle Sidebar" aria-label="Buka Menu Perpustakaan">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          
+          <div class="doc-info">
+            <h2 id="currentDocTitle" class="doc-title" title="Pilih atau unggah PDF">Belum ada buku dibuka</h2>
+            <span id="docProgressBadge" class="progress-pill">0% selesai</span>
+          </div>
+        </div>
+
+        <!-- Mode View Switcher -->
+        <div class="toolbar-center">
+          <div class="view-mode-tabs" role="tablist">
+            <button id="modeEnhancedBtn" class="mode-tab active" title="Mode Koreksi Font & Tipografi Nyaman" aria-label="Mode Teks Tipografi">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 7V4h16v3M9 20h6M12 4v16"/>
+              </svg>
+              <span>Tipografi</span>
+            </button>
+            <button id="modeCanvasBtn" class="mode-tab" title="Mode Tampilan Asli PDF" aria-label="Mode Layout PDF Asli">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+              <span>PDF Asli</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          <!-- Page Navigator (Desktop & Tablet) -->
+          <div class="page-nav desktop-page-nav">
+            <button id="prevPageBtn" class="nav-btn" title="Halaman Sebelumnya (Panah Kiri)" aria-label="Halaman Sebelumnya">‹</button>
+            <div class="page-counter">
+              <input type="number" id="pageNumberInput" min="1" value="1" aria-label="Nomor Halaman" />
+              <span>/</span>
+              <span id="totalPagesSpan">1</span>
+            </div>
+            <button id="nextPageBtn" class="nav-btn" title="Halaman Selanjutnya (Panah Kanan)" aria-label="Halaman Selanjutnya">›</button>
+          </div>
+
+          <!-- Quick Actions -->
+          <button id="typographyPanelToggle" class="toolbar-btn secondary-btn" title="Pengaturan Font & Tampilan" aria-label="Format Font">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span class="btn-label">Font</span>
+          </button>
+
+          <button id="ttsPlayBtn" class="toolbar-btn secondary-btn" title="Dengarkan Bacaan (Text-to-Speech)" aria-label="Dengarkan Suara">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+            <span id="ttsBtnText" class="btn-label">Dengarkan</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Typography Settings Drawer / Popover -->
+      <div class="typography-drawer" id="typographyDrawer">
+        <div class="drawer-header">
+          <h4>Koreksi & Kustomisasi Gaya Baca</h4>
+          <button id="closeDrawerBtn" class="icon-btn-sm">✕</button>
+        </div>
+
+        <div class="drawer-content">
+          <!-- Font Family Selection -->
+          <div class="setting-group">
+            <label class="setting-label">Pilihan Font Terkurasi (Mudah Dibaca):</label>
+            <div class="font-options" id="fontOptionGrid">
+              <button class="font-btn active" data-font="'Lora', serif" style="font-family: 'Lora', serif;">
+                <span class="font-preview">Aa</span>
+                <span class="font-name">Lora (Serif Mewah)</span>
+              </button>
+              <button class="font-btn" data-font="'Merriweather', serif" style="font-family: 'Merriweather', serif;">
+                <span class="font-preview">Aa</span>
+                <span class="font-name">Merriweather (Book)</span>
+              </button>
+              <button class="font-btn" data-font="'Newsreader', serif" style="font-family: 'Newsreader', serif;">
+                <span class="font-preview">Aa</span>
+                <span class="font-name">Newsreader (Editorial)</span>
+              </button>
+              <button class="font-btn" data-font="'Inter', sans-serif" style="font-family: 'Inter', sans-serif;">
+                <span class="font-preview">Aa</span>
+                <span class="font-name">Inter (Modern Clean)</span>
+              </button>
+              <button class="font-btn" data-font="'Plus Jakarta Sans', sans-serif" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                <span class="font-preview">Aa</span>
+                <span class="font-name">Plus Jakarta Sans</span>
+              </button>
+              <button class="font-btn" data-font="'Nunito', sans-serif" style="font-family: 'Nunito', sans-serif;">
+                <span class="font-preview">Aa</span>
+                <span class="font-name">Nunito (Santai/Ramah)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Color Themes -->
+          <div class="setting-group">
+            <label class="setting-label">Tema Warna Kertas / Tampilan:</label>
+            <div class="theme-options">
+              <button class="theme-btn active" data-theme="theme-paper" title="Kertas Klasik (Sepia Hangat)">
+                <span class="theme-swatch" style="background: #fbf0d9; border: 1px solid #d4c5a3;"></span>
+                <span>Paper Warm</span>
+              </button>
+              <button class="theme-btn" data-theme="theme-clean-white" title="Putih Bersih">
+                <span class="theme-swatch" style="background: #ffffff; border: 1px solid #e2e8f0;"></span>
+                <span>White Pure</span>
+              </button>
+              <button class="theme-btn" data-theme="theme-dark" title="Mode Malam Lembut (OLED Dark)">
+                <span class="theme-swatch" style="background: #18191d; border: 1px solid #333;"></span>
+                <span>Dark Slate</span>
+              </button>
+              <button class="theme-btn" data-theme="theme-sage" title="Hijau Lembut (Menenangkan Mata)">
+                <span class="theme-swatch" style="background: #e8ede3; border: 1px solid #cad4c5;"></span>
+                <span>Sage Green</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Font Size Slider -->
+          <div class="setting-group">
+            <div class="slider-header">
+              <label class="setting-label">Ukuran Huruf (Font Size):</label>
+              <span id="fontSizeDisplay" class="slider-val">19px</span>
+            </div>
+            <div class="slider-control">
+              <span class="slider-label-min">A</span>
+              <input type="range" id="fontSizeSlider" min="14" max="32" value="19" step="1" />
+              <span class="slider-label-max">A</span>
+            </div>
+          </div>
+
+          <!-- Line Height Slider -->
+          <div class="setting-group">
+            <div class="slider-header">
+              <label class="setting-label">Jarak Baris (Line Height):</label>
+              <span id="lineHeightDisplay" class="slider-val">1.8</span>
+            </div>
+            <div class="slider-control">
+              <input type="range" id="lineHeightSlider" min="1.4" max="2.4" value="1.8" step="0.1" />
+            </div>
+          </div>
+
+          <!-- Page Format / Paper Size Presets -->
+          <div class="setting-group">
+            <label class="setting-label">Format Kertas / Layout Baca:</label>
+            <div class="format-presets">
+              <button class="preset-btn" data-preset="novel">Novel Saku (740px)</button>
+              <button class="preset-btn active" data-preset="b5">B5 / Tablet (860px)</button>
+              <button class="preset-btn" data-preset="a4">Standar A4 (1050px)</button>
+              <button class="preset-btn" data-preset="wide">Layar Penuh (1350px)</button>
+            </div>
+          </div>
+
+          <!-- Content Width Slider -->
+          <div class="setting-group">
+            <div class="slider-header">
+              <label class="setting-label">Lebar Kustom Halaman:</label>
+              <span id="contentWidthDisplay" class="slider-val">860px</span>
+            </div>
+            <div class="slider-control">
+              <input type="range" id="contentWidthSlider" min="600" max="1500" value="860" step="20" />
+            </div>
+          </div>
+
+          <!-- Text Alignment -->
+          <div class="setting-group">
+            <label class="setting-label">Rata Paragraf:</label>
+            <div class="align-options">
+              <button class="align-btn active" data-align="justify">Rata Kanan Kiri (Buku)</button>
+              <button class="align-btn" data-align="left">Rata Kiri</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reader Container -->
+      <div class="reader-scroll-area" id="readerScrollArea">
+        <!-- Text Enhanced View (Active Default) -->
+        <article class="enhanced-book-container" id="enhancedViewContainer">
+          <div class="reading-card" id="readingCard">
+            <!-- Header Info -->
+            <div class="reading-page-badge" id="readingPageIndicator">
+              Halaman 1
+            </div>
+
+            <!-- Enhanced Typography Content -->
+            <div class="enhanced-text-content" id="enhancedContent">
+              <div class="welcome-guide">
+                <div class="welcome-illustration">📖</div>
+                <h2>Selamat Datang di LuminaRead!</h2>
+                <p>Aplikasi pembaca PDF pintar yang mengubah dokumen kaku menjadi buku bacaan yang nyaman di mata.</p>
+                <div class="feature-grid">
+                  <div class="feature-card">
+                    <span class="feature-icon">💾</span>
+                    <strong>Ingat Posisi Terakhir</strong>
+                    <p>Halaman dan progres bacaan Anda tersimpan otomatis. Buka kapan saja dan lanjutkan tepat di mana Anda berhenti.</p>
+                  </div>
+                  <div class="feature-card">
+                    <span class="feature-icon">✨</span>
+                    <strong>Koreksi Font & Style</strong>
+                    <p>Ubah jenis font dokumen dengan tipografi terkurasi (Lora, Merriweather, Inter) serta sesuaikan ukuran dan warna latar kertas.</p>
+                  </div>
+                  <div class="feature-card">
+                    <span class="feature-icon">📚</span>
+                    <strong>Perpustakaan Multi-Buku</strong>
+                    <p>Simpan banyak file PDF sekaligus dalam daftar riwayat lokal Anda tanpa khawatir hilang.</p>
+                  </div>
+                </div>
+                <div class="cta-box">
+                  <label for="pdfFileInput" class="btn-primary-large">
+                    Pilih File PDF untuk Mulai Membaca
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Page Bottom Nav -->
+            <div class="reading-footer-nav" id="readingFooterNav" style="display: none;">
+              <button id="bottomPrevBtn" class="footer-nav-btn">← Halaman Sebelumnya</button>
+              <span id="bottomPageStatus">Halaman 1 dari 1</span>
+              <button id="bottomNextBtn" class="footer-nav-btn">Halaman Berikutnya →</button>
+            </div>
+          </div>
+        </article>
+
+        <!-- Original PDF Canvas View -->
+        <div class="original-canvas-container" id="canvasViewContainer" style="display: none;">
+          <div class="canvas-controls">
+            <button id="zoomOutBtn" class="icon-btn-sm" title="Perkecil">−</button>
+            <span id="zoomLevelDisplay">100%</span>
+            <button id="zoomInBtn" class="icon-btn-sm" title="Perbesar">+</button>
+            <button id="fitWidthBtn" class="text-btn-sm">Sesuaikan Lebar</button>
+          </div>
+          <div class="canvas-wrapper">
+            <canvas id="pdfCanvas"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Bottom Navigation Bar (Thumb friendly, 44px+ touch targets) -->
+      <nav class="mobile-bottom-bar" id="mobileBottomBar" aria-label="Navigasi Membaca Mobile">
+        <button id="mobilePrevBtn" class="mobile-nav-action-btn" title="Halaman Sebelumnya" aria-label="Halaman Sebelumnya">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+
+        <div class="mobile-page-pill" id="mobilePagePill" title="Ketuk untuk ganti halaman">
+          <span class="mobile-pill-prefix">Hal</span>
+          <span id="mobilePageDisplay">1</span>
+          <span class="mobile-pill-slash">/</span>
+          <span id="mobileTotalDisplay">1</span>
+        </div>
+
+        <button id="mobileNextBtn" class="mobile-nav-action-btn" title="Halaman Berikutnya" aria-label="Halaman Berikutnya">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </nav>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
